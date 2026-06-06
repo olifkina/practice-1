@@ -1,5 +1,5 @@
+import math
 from abc import ABC, abstractmethod
-
 
 # Базовый абстрактный класс
 class Shape3D(ABC):
@@ -7,14 +7,22 @@ class Shape3D(ABC):
         self.density = density
         self.owner = owner
 
+    # НОВЫЕ МЕТОДЫ: Вычисление объема и площади (по инструкции)
     @abstractmethod
-    def print_info(self):
+    def get_volume(self) -> float:
+        pass
+
+    @abstractmethod
+    def get_surface_area(self) -> float:
         pass
 
     @abstractmethod
     def get_type(self) -> str:
         pass
 
+    @abstractmethod
+    def print_info(self):
+        pass
 
 # Шар
 class Sphere(Shape3D):
@@ -22,12 +30,17 @@ class Sphere(Shape3D):
         super().__init__(density, owner)
         self.radius = radius
 
-    def get_type(self):
+    def get_volume(self) -> float:
+        return (4/3) * math.pi * (self.radius ** 3)
+
+    def get_surface_area(self) -> float:
+        return 4 * math.pi * (self.radius ** 2)
+
+    def get_type(self): 
         return "Sphere"
 
     def print_info(self):
-        print(f"Шар | Плотность: {self.density} | Владелец: {self.owner} | Радиус: {self.radius}")
-
+        print(f"Шар | Владелец: {self.owner} | Плотность: {self.density} | Радиус: {self.radius} | Объем: {self.get_volume():.2f} | Пл. поверхности: {self.get_surface_area():.2f}")
 
 # Параллелепипед
 class Parallelepiped(Shape3D):
@@ -35,13 +48,17 @@ class Parallelepiped(Shape3D):
         super().__init__(density, owner)
         self.a, self.b, self.c = a, b, c
 
-    def get_type(self):
+    def get_volume(self) -> float:
+        return self.a * self.b * self.c
+
+    def get_surface_area(self) -> float:
+        return 2 * (self.a * self.b + self.b * self.c + self.a * self.c)
+
+    def get_type(self): 
         return "Parallelepiped"
 
     def print_info(self):
-        print(
-            f"Параллелепипед | Плотность: {self.density} | Владелец: {self.owner} | Ребра: {self.a}x{self.b}x{self.c}")
-
+        print(f"Параллелепипед | Владелец: {self.owner} | Плотность: {self.density} | Ребра: {self.a}x{self.b}x{self.c} | Объем: {self.get_volume():.2f} | Пл. поверхности: {self.get_surface_area():.2f}")
 
 # Цилиндр
 class Cylinder(Shape3D):
@@ -49,13 +66,17 @@ class Cylinder(Shape3D):
         super().__init__(density, owner)
         self.x, self.y, self.r, self.h = x, y, r, h
 
-    def get_type(self):
+    def get_volume(self) -> float:
+        return math.pi * (self.r ** 2) * self.h
+
+    def get_surface_area(self) -> float:
+        return 2 * math.pi * self.r * (self.r + self.h)
+
+    def get_type(self): 
         return "Cylinder"
 
     def print_info(self):
-        print(
-            f"Цилиндр | Плотность: {self.density} | Владелец: {self.owner} | Центр: ({self.x};{self.y}) | Радиус: {self.r} | Высота: {self.h}")
-
+        print(f"Цилиндр | Владелец: {self.owner} | Плотность: {self.density} | Центр: ({self.x};{self.y}) | R: {self.r} H: {self.h} | Объем: {self.get_volume():.2f} | Пл. поверхности: {self.get_surface_area():.2f}")
 
 # Класс-контейнер
 class ShapeContainer:
@@ -78,37 +99,34 @@ class ShapeContainer:
     def remove_shape(self, condition: str):
         parts = condition.strip().split()
         if len(parts) != 3: return
-
+        
         field, op, value = parts[0], parts[1], parts[2]
         value = value.replace('"', '').replace("'", "")
-
+        
         new_shapes = []
         for shape in self.shapes:
             match = False
             if field in ["density", "плотность"]:
                 val = float(value)
-                if op == ">":
-                    match = shape.density > val
-                elif op == "<":
-                    match = shape.density < val
-                elif op in ["==", "="]:
-                    match = shape.density == val
+                if op == ">": match = shape.density > val
+                elif op == "<": match = shape.density < val
+                elif op in ["==", "="]: match = shape.density == val
             elif field in ["owner", "владелец"]:
                 if op in ["==", "="]: match = shape.owner == value
             elif field == "type":
                 if op in ["==", "="]: match = shape.get_type() == value
-
+            
             if not match:
                 new_shapes.append(shape)
-
+        
         self.shapes = new_shapes
         print(f"После удаления осталось: {len(self.shapes)}")
 
     def process_command(self, line: str, line_num: int):
         line = line.strip()
         if not line: return
-        print(f"[строка {line_num}] {line}")
-
+        print(f"\n[строка {line_num}] {line}")
+        
         parts = line.split()
         cmd = parts[0]
 
@@ -116,7 +134,7 @@ class ShapeContainer:
             type_str = parts[1]
             density = float(parts[2])
             owner = parts[3]
-
+            
             if type_str == "Sphere":
                 radius = int(parts[4])
                 self.add_shape(Sphere(density, owner, radius))
@@ -127,26 +145,24 @@ class ShapeContainer:
                 x, y, r, h = float(parts[4]), float(parts[5]), float(parts[6]), float(parts[7])
                 self.add_shape(Cylinder(density, owner, x, y, r, h))
             print(f"[ADD] Объект успешно добавлен. Всего объектов: {len(self.shapes)}")
-
+            
         elif cmd == "REM":
             condition = line[4:].strip()
             self.remove_shape(condition)
         elif cmd == "PRINT":
             self.print_all()
 
-
 # Точка входа (ТЕПЕРЬ ЧИТАЕТ ИЗ ФАЙЛА)
 if __name__ == "__main__":
     container = ShapeContainer()
     filename = "commands.txt"
-
+    
     print(f"НАЧАЛО ОБРАБОТКИ ФАЙЛА {filename}")
     try:
-        # Открываем файл и читаем его построчно
         with open(filename, "r", encoding="utf-8") as file:
             for line_num, line in enumerate(file, 1):
                 container.process_command(line, line_num)
     except FileNotFoundError:
         print(f"ОШИБКА: Файл '{filename}' не найден рядом с программой!")
-
-    print("КОНЕЦ ОБРАБОТКИ")
+        
+    print("\nКОНЕЦ ОБРАБОТКИ")
